@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- basic -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- mobile metas -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <!-- site metas -->
+    <title>PhoneMart</title>
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- bootstrap css -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body>
+    <section class="cart container mt-2 my-3 py-5">
+
+        <div class="container mt-2">
+            <h4>Cart</h4>
+        </div>
+
+        <table class="table table-bordered table-striped mt-5">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% cart.forEach(function(item){%>
+                <tr>
+                    <td>
+                        <div class="product-info d-flex align-items-center">
+                            <img src="images/<%=item.image %>" class="rounded-circle" style="width: 50px; height: 50px;">
+                            <div class="ml-3">
+                                <p><%= item.name %></p>
+                                <% if(item.sale_price){ %>
+                                <small><span>$</span><%= item.sale_price %></small>
+                                <% } else { %>
+                                <small><span>$</span><%= item.price %></small>
+                                <% } %>
+                                <br>
+                                <form method="post" action="/remove_product">
+                                    <input type="hidden" name="id" value="<%= item.id %>">
+                                    <input type="submit" name="remove_btn" class="remove_btn btn btn-danger btn-sm"
+                                        value="remove">
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        <form method="post" action="/edit_product_quantity">
+                            <input type="hidden" value="<%= item.id %>" name="id">
+                            <!-- <input type="number" name="quantity" value="1" class="form-control"> -->
+                            <input type="submit" value="-" class="edit-btn btn btn-primary btn-sm"
+                                name="decrease_product_quantity">
+                            <input type="text" name="quantity" value="<%= item.quantity %>" readonly>
+                            <input type="submit" value="+" class="edit-btn btn btn-primary btn-sm"
+                                name="increase_product_quantity">
+                        </form>
+                    </td>
+
+                    <td>
+                        <% if(item.sale_price){ %>
+                        <span class="product-price">$<%= item.sale_price * item.quantity %></span>
+                        <% } else { %>
+                        <span class="product-price">$<%= item.price * item.quantity %></span>
+                        <% } %>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+
+        <div class="cart-total">
+            <table class="table">
+                <tr>
+                    <td>Total</td>
+                    <td>$ <%= total %></td>
+                </tr>
+            </table>
+        </div>
+    </section>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+        integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
