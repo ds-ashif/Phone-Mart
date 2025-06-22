@@ -1,3 +1,4 @@
+
 var express=require('express');
 var ejs=require('ejs');
 var bodyParser=require('body-parser');
@@ -5,11 +6,15 @@ var mysql=require('mysql');
 var session=require('express-session');
 var path = require('path'); 
 
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+
+
 mysql.createConnection({
     host:"localhost",
     user:"root",
     password:"",
-    database:"node_project"
+    database:"phonemart"
 })
 
 var app=express();
@@ -18,13 +23,16 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine','ejs');
 
 
-app.listen(8080);
+app.listen(8081,()=>{
+    console.log('server running at port 8081');
+});
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(session({
     secret:"secret",
     resave:false,
     saveUninitialized:true
 }));
+app.use(express.json()); // To parse JSON bodies
 
 function isProductInCart(cart,id){
     for (let i = 0; i < cart.length; i++) {
@@ -52,7 +60,7 @@ app.get('/',function(req,res){
         host:"localhost",
         user:"root",
         password:"",
-        database:"node_project"
+        database:"phonemart"
     })
     con.query("SELECT * FROM products",(err,result)=>{
 
@@ -178,7 +186,7 @@ app.post('/place_order',function(req,res){
         host:"localhost",
         user:"root",
         password:"",
-        database:"node_project"
+        database:"phonemart"
     })
     var cart=req.session.cart;
     for(let i=0;i<cart.length;i++){
@@ -207,53 +215,72 @@ app.post("/my-server/create-paypal-order", async (req, res) => {
     res.json(order);
   });
   
-  // use the orders api to create an order
-  function createOrder() {
-    // create accessToken using your clientID and clientSecret
-    // for the full stack example, please see the Standard Integration guide
-    // https://developer.paypal.com/docs/multiparty/checkout/standard/integrate/-/
-    const accessToken = "REPLACE_WITH_YOUR_ACCESS_TOKEN";
-    return fetch ("https://api-m.sandbox.paypal.com/v2/checkout/orders", {
-      method: "POST",
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ${accessToken}',
-      },
-      body: JSON.stringify({
-        "purchase_units": [
-          {
-            "amount": {
-              "currency_code": "USD",
-              "value": "100.00"
-            },
-            "reference_id": "d9f80740-38f0-11e8-b467-0ed5f89f718b"
-          }
-        ],
-        "intent": "CAPTURE",
-        "payment_source": {
-          "paypal": {
-            "experience_context": {
-              "payment_method_preference": "IMMEDIATE_PAYMENT_REQUIRED",
-              "payment_method_selected": "PAYPAL",
-              "brand_name": "EXAMPLE INC",
-              "locale": "en-US",
-              "landing_page": "LOGIN",
-              "shipping_preference": "SET_PROVIDED_ADDRESS",
-              "user_action": "PAY_NOW",
-              "return_url": "https://example.com/returnUrl",
-              "cancel_url": "https://example.com/cancelUrl"
-            }
+  
+async function getAccessToken() {
+    const clientId = 'Your client id';       
+    const clientSecret = 'your secret key';      
+
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+    const response = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
+        method: "POST",
+        headers: {
+            "Authorization": `Basic ${credentials}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "grant_type=client_credentials"
+    });
+
+    const data = await response.json();
+    return data.access_token;
+}
+
+async function createOrder() {
+  const accessToken = await getAccessToken(); // get token dynamically
+
+  return fetch("https://api-m.sandbox.paypal.com/v2/checkout/orders", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: "USD",
+            value: "100.00"
           }
         }
-      })
+      ]
     })
-    .then((response) => response.json());
-  }
-            
+  }).then(res => res.json());
+}
+
+app.post("/my-server/capture-paypal-order/:orderID", async (req, res) => {
+    const accessToken = await getAccessToken();
+    const orderID = req.params.orderID;
+
+    const response = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}/capture`, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const data = await response.json();
+    res.json(data);
+});
+
+       
 app.get('/payment',function(req,res){
     var total=req.session.total
     res.render('pages/payment',{total:total});
 });
+
+
 
 
 
@@ -282,3 +309,62 @@ app.get('/cart', function(req, res) {
 app.get('/index', function(req, res) {
     res.render('pages/index.ejs'); 
 });
+
+
+app.post('/chatbot', function(req, res) {
+    const message = req.body.message.toLowerCase().trim();
+
+    const faqResponses = [
+        {
+            keywords: ['hi', 'hello', 'hey'],
+            response: "Hey, how may I help you? Please ask!"
+        },
+        {
+            keywords: ['how', 'order', 'place'],
+            response: "To place an order, add a phone to your cart and proceed to checkout."
+        },
+        {
+            keywords: ['delivery', 'time', 'days'],
+            response: "Delivery usually takes 3–5 business days depending on your location."
+        },
+        {
+            keywords: ['return', 'refund', 'policy'],
+            response: "You can return products within 7 days of delivery for a full refund."
+        },
+        {
+            keywords: ['payment', 'method', 'pay'],
+            response: "We accept payments via PayPal. It’s fast and secure!"
+        },
+        {
+            keywords: ['contact', 'support', 'help'],
+            response: "You can reach us at shop.Phonemart@gmail.com or call us at (+91) 8522369417."
+        },
+        {
+            keywords: ['warranty', 'guarantee'],
+            response: "Most of our phones come with a 1-year manufacturer warranty."
+        },
+        {
+            keywords: ['cancel', 'order'],
+            response: "To cancel an order, contact support within 12 hours of placing it."
+        },
+        {
+            keywords: ['track', 'status'],
+            response: "Tracking is available via email once your order is shipped."
+        },
+        {
+            keywords: ['offers', 'sale', 'discount'],
+            response: "We currently have up to 25% off on selected phones!"
+        }
+    ];
+
+    const found = faqResponses.find(faq =>
+        faq.keywords.some(keyword => message.includes(keyword))
+    );
+
+    const fallback = "I'm still learning. Could you try asking in a different way?";
+    res.json({ reply: found ? found.response : fallback });
+});
+
+
+
+
