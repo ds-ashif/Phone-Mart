@@ -136,6 +136,44 @@
                 });
             });
         </script>
+<script src="https://www.paypal.com/sdk/js?client-id=4HeUWBSfk6oqPDbb8nii5qvExebR8utMzf3vhqhmn-f6ACh7WTEB_gHQKSZ96Lk&currency=USD"></script>
+
+        <script>
+  paypal.Buttons({
+    createOrder: function(data, actions) {
+      return fetch("/my-server/create-paypal-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.json())
+      .then(order => order.id); // This returns the PayPal Order ID to PayPal SDK
+    },
+
+    onApprove: function(data, actions) {
+      return fetch(`/my-server/capture-paypal-order/${data.orderID}`, {
+        method: "POST"
+      })
+      .then(res => res.json())
+      .then(details => {
+        alert('✅ Payment completed by ' + details.payer.name.given_name);
+        window.location.href = "/payment-success";
+      });
+    },
+
+    onCancel: function() {
+      alert("❌ Payment was cancelled.");
+      window.location.href = "/payment-cancel";
+    },
+
+    onError: function(err) {
+      console.error("❌ PayPal error:", err);
+      alert("Something went wrong. Please try again.");
+    }
+  }).render('#paypal-button-container');
+</script>
+
 </body>
 
 </html>
@@ -144,38 +182,5 @@
 
 
 
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head>
-  <body>
-    <!-- Replace "test" with your own sandbox Business account app client ID -->
-    <script src="https://www.paypal.com/sdk/js?client-id=ATGWzbXlmeAVEbiow2PJJzHukuOLdGh5rI0nnTtLBRIPrRZOMJ-OdtlBFvQN8nx9LgxUrLXp_9-qgVdy&currency=USD"></script>
-    <!-- Set up a container element for the button -->
-  
-    <script>
-      paypal.Buttons({
-        createOrder() {
-          return fetch("/my-server/create-paypal-order", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              cart: [
-                {
-                  sku: "YOUR_PRODUCT_STOCK_KEEPING_UNIT",
-                  quantity: "YOUR_PRODUCT_QUANTITY",
-                },
-              ]
-            })
-          })
-          .then((response) => response.json())
-          .then((order) => order.id);
-        }
-      }).render('#paypal-button-container');
-    </script>
-  </body>
-</html>
+
           
