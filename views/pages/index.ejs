@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <!-- basic -->
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- mobile metas -->
@@ -414,6 +414,61 @@
             });
         });
     </script>
+
+<!-- Chatbot Toggle Button -->
+<button id="toggle-chatbot" style="position: fixed; bottom: 20px; right: 20px; background-color: red; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; z-index: 10000; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+    💬
+</button>
+
+<!-- Chatbot Container -->
+<div id="chatbot-container" style="position: fixed; bottom: 80px; right: 20px; width: 300px; background: white; border: 1px solid #ccc; border-radius: 8px; padding: 10px; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    <h5 style="margin-bottom: 10px;">Ask Phonemart Bot </h5>
+    <div id="chat-display" style="height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 5px; font-size: 14px; background-color: #f9f9f9;"></div>
+    <input type="text" id="chat-input" class="form-control mt-2" placeholder="Ask something..." />
+    <button onclick="askBot()" class="btn btn-danger btn-sm mt-2 w-100">Send</button>
+</div>
+<script>
+    const chatContainer = document.getElementById("chatbot-container");
+    const toggleBtn = document.getElementById("toggle-chatbot");
+    const chatInput = document.getElementById("chat-input");
+    const chatDisplay = document.getElementById("chat-display");
+
+    toggleBtn.addEventListener("click", () => {
+        if (chatContainer.style.display === "none" || chatContainer.style.display === "") {
+            chatContainer.style.display = "block";
+            chatInput.focus();
+        } else {
+            chatContainer.style.display = "none";
+        }
+    });
+
+    function askBot() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        chatDisplay.innerHTML += `<div><strong>You:</strong> ${message}</div>`;
+
+        fetch('/chatbot', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: message })
+        })
+        .then(res => res.json())
+        .then(data => {
+            chatDisplay.innerHTML += `<div><strong>Bot:</strong> ${data.reply}</div>`;
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        });
+
+        chatInput.value = '';
+        chatInput.focus();
+    }
+
+    chatInput.addEventListener("keypress", function(e) {
+        if (e.key === "Enter") askBot();
+    });
+</script>
+
+
 </body>
 
 </html>
